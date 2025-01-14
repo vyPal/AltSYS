@@ -54,6 +54,18 @@ impl VGABuffer {
                             buffer[offset + 2] = val as u8;
                         }
                     },
+                    4 => {
+                        let color = match color {
+                            Color::RGB(r, g, b) => (r << 16) | (g << 8) | b,
+                            Color::BGR(b, g, r) => (r << 16) | (g << 8) | b,
+                            Color::GRAYSCALE(val) => (val << 16) | (val << 8) | val,
+                        };
+                        let color = color.to_le_bytes();
+                        buffer[offset] = color[0];
+                        buffer[offset + 1] = color[1];
+                        buffer[offset + 2] = color[2];
+                        buffer[offset + 3] = color[3];
+                    }
                     _ => panic!("unsupported bytes per pixel"),
                 }
             }
@@ -87,6 +99,18 @@ impl VGABuffer {
                     buffer[offset + 2] = val as u8;
                 }
             },
+            4 => {
+                let color = match color {
+                    Color::RGB(r, g, b) => (r << 16) | (g << 8) | b,
+                    Color::BGR(b, g, r) => (r << 16) | (g << 8) | b,
+                    Color::GRAYSCALE(val) => (val << 16) | (val << 8) | val,
+                };
+                let color = color.to_le_bytes();
+                buffer[offset] = color[0];
+                buffer[offset + 1] = color[1];
+                buffer[offset + 2] = color[2];
+                buffer[offset + 3] = color[3];
+            }
             _ => panic!("unsupported bytes per pixel"),
         }
     }
@@ -140,6 +164,18 @@ impl VGABuffer {
                             buffer[offset + 2] = *val as u8;
                         }
                     },
+                    4 => {
+                        let color = match color {
+                            Color::RGB(r, g, b) => (r << 16) | (g << 8) | b,
+                            Color::BGR(b, g, r) => (r << 16) | (g << 8) | b,
+                            Color::GRAYSCALE(val) => (val << 16) | (val << 8) | val,
+                        };
+                        let color = color.to_le_bytes();
+                        buffer[offset] = color[0];
+                        buffer[offset + 1] = color[1];
+                        buffer[offset + 2] = color[2];
+                        buffer[offset + 3] = color[3];
+                    }
                     _ => panic!("unsupported bytes per pixel"),
                 }
             }
@@ -176,6 +212,18 @@ impl VGABuffer {
                             buffer[offset + 2] = *val as u8;
                         }
                     },
+                    4 => {
+                        let color = match color {
+                            Color::RGB(r, g, b) => (r << 24) | (g << 16) | (b << 8),
+                            Color::BGR(b, g, r) => (r << 24) | (g << 16) | (b << 8),
+                            Color::GRAYSCALE(val) => (val << 24) | (val << 16) | (val << 8),
+                        };
+                        let color = color.to_le_bytes();
+                        buffer[offset] = color[0];
+                        buffer[offset + 1] = color[1];
+                        buffer[offset + 2] = color[2];
+                        buffer[offset + 3] = color[3];
+                    }
                     _ => panic!("unsupported bytes per pixel"),
                 }
             }
