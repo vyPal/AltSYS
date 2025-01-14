@@ -106,6 +106,10 @@ impl VGABuffer {
         }
     }
 
+    pub fn shift_up(&self, offset: usize) {
+        self.buffer.lock().copy_within((self.width * offset * self.bytes_per_pixel).., 0);
+    }
+
     pub fn write_pixels(&self, pixels: &[&[Color]]) {
         let mut buffer = self.buffer.lock();
         for (y, row) in pixels.iter().enumerate() {

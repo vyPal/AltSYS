@@ -1,4 +1,5 @@
 pub mod vga_buffer;
+pub mod console;
 
 #[derive(Clone, Copy)]
 pub enum Color {
