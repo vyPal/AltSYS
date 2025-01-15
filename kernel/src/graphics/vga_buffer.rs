@@ -1,3 +1,5 @@
+use core::ptr::write_bytes;
+
 use bootloader_api::info::FrameBuffer;
 use spin::Mutex;
 
@@ -8,6 +10,7 @@ pub struct VGABuffer {
     bytes_per_pixel: usize,
     pub width: usize,
     pub height: usize,
+    length: usize,
 }
 
 impl VGABuffer {
@@ -18,57 +21,73 @@ impl VGABuffer {
             bytes_per_pixel: info.bytes_per_pixel,
             width: info.width,
             height: info.height,
+            length: info.byte_len,
         }
     }
 
     pub fn clear(&self) {
-        self.buffer.lock().fill(0);
+        unsafe {
+            core::ptr::write_bytes(self.buffer.lock().as_mut_ptr(), 0, self.length);
+        }
     }
 
     pub fn fill(&self, color: Color) {
         let mut buffer = self.buffer.lock();
-        for y in 0..self.height {
-            for x in 0..self.width {
-                let offset = y * self.width + x;
-                let offset = offset * self.bytes_per_pixel;
-                match self.bytes_per_pixel {
-                    1 => buffer[offset] = match color {
-                        Color::GRAYSCALE(val) => val as u8,
-                        Color::RGB(r, g, b) => ((r + g + b) / 3) as u8,
-                        Color::BGR(b, g, r) => ((r + g + b) / 3) as u8,
-                    },
-                    3 => match color {
-                        Color::RGB(r, g, b) => {
+    
+        match self.bytes_per_pixel {
+            1 => {
+                let color = match color {
+                    Color::GRAYSCALE(val) => val as u8,
+                    Color::RGB(r, g, b) => ((r + g + b) / 3) as u8,
+                    Color::BGR(b, g, r) => ((r + g + b) / 3) as u8,
+                };
+                unsafe { write_bytes(buffer.as_mut_ptr(), color, self.length); }
+            }
+            3 => {
+                let mut offset = 0;
+                match color {
+                    Color::RGB(r, g, b) => {
+                        for _ in 0..self.height * self.width {
                             buffer[offset] = r as u8;
                             buffer[offset + 1] = g as u8;
                             buffer[offset + 2] = b as u8;
-                        },
-                        Color::BGR(b, g, r) => {
-                            buffer[offset] = r as u8;
+                            offset += 3;
+                        }
+                    }
+                    Color::BGR(b, g, r) => {
+                        for _ in 0..self.height * self.width {
+                            buffer[offset] = b as u8;
                             buffer[offset + 1] = g as u8;
-                            buffer[offset + 2] = b as u8;
-                        },
-                        Color::GRAYSCALE(val) => {
+                            buffer[offset + 2] = r as u8;
+                            offset += 3;
+                        }
+                    }
+                    Color::GRAYSCALE(val) => {
+                        for _ in 0..self.height * self.width {
                             buffer[offset] = val as u8;
                             buffer[offset + 1] = val as u8;
                             buffer[offset + 2] = val as u8;
+                            offset += 3;
                         }
-                    },
-                    4 => {
-                        let color = match color {
-                            Color::RGB(r, g, b) => (r << 16) | (g << 8) | b,
-                            Color::BGR(b, g, r) => (r << 16) | (g << 8) | b,
-                            Color::GRAYSCALE(val) => (val << 16) | (val << 8) | val,
-                        };
-                        let color = color.to_le_bytes();
-                        buffer[offset] = color[0];
-                        buffer[offset + 1] = color[1];
-                        buffer[offset + 2] = color[2];
-                        buffer[offset + 3] = color[3];
                     }
-                    _ => panic!("unsupported bytes per pixel"),
                 }
             }
+            4 => {
+                let color = match color {
+                    Color::RGB(r, g, b) => (r << 16) | (g << 8) | b,
+                    Color::BGR(b, g, r) => (r << 16) | (g << 8) | b,
+                    Color::GRAYSCALE(val) => (val << 16) | (val << 8) | val,
+                };
+                let color = color.to_le_bytes();
+    
+                for i in (0..self.length).step_by(4) {
+                    buffer[i] = color[0];
+                    buffer[i + 1] = color[1];
+                    buffer[i + 2] = color[2];
+                    buffer[i + 3] = color[3];
+                }
+            }
+            _ => panic!("unsupported bytes per pixel"),
         }
     }
 
